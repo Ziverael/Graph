@@ -2,7 +2,7 @@
 Example from Assignment 1
 """
 
-from graph.model import Graph, Vertex, VertexName
+from graph.base import Graph, Vertex, VertexName
 
 EDGES_PARAMS = [
     (Vertex(name=VertexName("Alice")), Vertex(name=VertexName("Bob"))),

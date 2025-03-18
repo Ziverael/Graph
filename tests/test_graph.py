@@ -1,5 +1,5 @@
-from graph import model
-from graph.model import Vertex, VertexName
+from graph import base
+from graph.base import Vertex, VertexName
 import pytest
 import logging
 from typing import cast
@@ -7,7 +7,7 @@ from typing import cast
 
 def test_init_graph():
     # when
-    g = model.Graph()
+    g = base.Graph()
 
     # then
     assert g._vertices == {}
@@ -18,7 +18,7 @@ def test_init_graph():
 
 @pytest.fixture
 def empty_graph():
-    return model.Graph()
+    return base.Graph()
 
 
 def test_add_vertex(empty_graph):
@@ -27,27 +27,27 @@ def test_add_vertex(empty_graph):
     vertices_in_graph = ["A", "B", "C"]
     vertex_to_add = cast(VertexName, "D")
     g._vertices = {
-        name: model.Vertex(name=cast(VertexName, name)) for name in vertices_in_graph
+        name: base.Vertex(name=cast(VertexName, name)) for name in vertices_in_graph
     }
 
     # when
-    g.add_vertex(model.Vertex(name=vertex_to_add))
+    g.add_vertex(base.Vertex(name=vertex_to_add))
 
     # then
     assert vertex_to_add in g._vertices
-    assert model.Vertex(name=vertex_to_add) in g._vertices.values()
+    assert base.Vertex(name=vertex_to_add) in g._vertices.values()
 
 
 def test_add_vertex__vertex_already_exists():
     # given
-    g = model.Graph()
+    g = base.Graph()
     vertex_to_add = cast(VertexName, "A")
-    g._vertices = {vertex_to_add: model.Vertex(name=vertex_to_add)}
+    g._vertices = {vertex_to_add: base.Vertex(name=vertex_to_add)}
     expected_error_message = f"Vertex {vertex_to_add} already exists"
 
     # when
-    with pytest.raises(model.GraphError, match=expected_error_message):
-        g.add_vertex(model.Vertex(name=vertex_to_add))
+    with pytest.raises(base.GraphError, match=expected_error_message):
+        g.add_vertex(base.Vertex(name=vertex_to_add))
 
 
 @pytest.mark.parametrize(
@@ -75,11 +75,11 @@ def test_add_vertices_from_list(
 
     # when
     with caplog.at_level(logging.WARNING):
-        g.add_vertices_from_list([model.Vertex(name=name) for name in vertices_to_add])
+        g.add_vertices_from_list([base.Vertex(name=name) for name in vertices_to_add])
 
     # then
     assert g._vertices == {
-        name: model.Vertex(name=name) for name in expected_vertices_in_graph
+        name: base.Vertex(name=name) for name in expected_vertices_in_graph
     }
     assert expected_log_message in caplog.text
 
@@ -91,9 +91,9 @@ def test_add_vertices_from_list(
             ["A", "B", "C"],
             [("A", "B", 1.0)],
             [
-                model.UndirectedEdge(
-                    vertex1=model.Vertex(name=cast(VertexName, "A")),
-                    vertex2=model.Vertex(name=cast(VertexName, "B")),
+                base.UndirectedEdge(
+                    vertex1=base.Vertex(name=cast(VertexName, "A")),
+                    vertex2=base.Vertex(name=cast(VertexName, "B")),
                     weight=1.0,
                 )
             ],
@@ -103,9 +103,9 @@ def test_add_vertices_from_list(
             ["A", "B", "C"],
             [("A", "B")],
             [
-                model.UndirectedEdge(
-                    vertex1=model.Vertex(name=cast(VertexName, "A")),
-                    vertex2=model.Vertex(name=cast(VertexName, "B")),
+                base.UndirectedEdge(
+                    vertex1=base.Vertex(name=cast(VertexName, "A")),
+                    vertex2=base.Vertex(name=cast(VertexName, "B")),
                     weight=1.0,
                 )
             ],
@@ -115,9 +115,9 @@ def test_add_vertices_from_list(
             ["A", "B", "C"],
             [("A", "C", 0.3)],
             [
-                model.UndirectedEdge(
-                    vertex1=model.Vertex(name=cast(VertexName, "A")),
-                    vertex2=model.Vertex(name=cast(VertexName, "C")),
+                base.UndirectedEdge(
+                    vertex1=base.Vertex(name=cast(VertexName, "A")),
+                    vertex2=base.Vertex(name=cast(VertexName, "C")),
                     weight=0.3,
                 )
             ],
@@ -127,9 +127,9 @@ def test_add_vertices_from_list(
             ["A", "B", "C"],
             [("A", "D", 0.3)],
             [
-                model.UndirectedEdge(
-                    vertex1=model.Vertex(name=cast(VertexName, "A")),
-                    vertex2=model.Vertex(name=cast(VertexName, "D")),
+                base.UndirectedEdge(
+                    vertex1=base.Vertex(name=cast(VertexName, "A")),
+                    vertex2=base.Vertex(name=cast(VertexName, "D")),
                     weight=0.3,
                 )
             ],
@@ -139,9 +139,9 @@ def test_add_vertices_from_list(
             [],
             [("A", "D", 0.3)],
             [
-                model.UndirectedEdge(
-                    vertex1=model.Vertex(name=cast(VertexName, "A")),
-                    vertex2=model.Vertex(name=cast(VertexName, "D")),
+                base.UndirectedEdge(
+                    vertex1=base.Vertex(name=cast(VertexName, "A")),
+                    vertex2=base.Vertex(name=cast(VertexName, "D")),
                     weight=0.3,
                 )
             ],
@@ -154,7 +154,7 @@ def test_add_edge(
 ):
     # given
     g = empty_graph
-    vertices = [model.Vertex(name=name) for name in vertices_in_graph]
+    vertices = [base.Vertex(name=name) for name in vertices_in_graph]
     g._vertices = {vertex.name: vertex for vertex in vertices}
     edges = []
     for edge in edges_params:
@@ -183,14 +183,14 @@ def test_add_edge(
             ["A", "B", "C"],
             [("A", "B", 1.0), ("A", "C", 0.2)],
             [
-                model.UndirectedEdge(
-                    vertex1=model.Vertex(name=cast(VertexName, "A")),
-                    vertex2=model.Vertex(name=cast(VertexName, "B")),
+                base.UndirectedEdge(
+                    vertex1=base.Vertex(name=cast(VertexName, "A")),
+                    vertex2=base.Vertex(name=cast(VertexName, "B")),
                     weight=1.0,
                 ),
-                model.UndirectedEdge(
-                    vertex1=model.Vertex(name=cast(VertexName, "A")),
-                    vertex2=model.Vertex(name=cast(VertexName, "C")),
+                base.UndirectedEdge(
+                    vertex1=base.Vertex(name=cast(VertexName, "A")),
+                    vertex2=base.Vertex(name=cast(VertexName, "C")),
                     weight=0.2,
                 ),
             ],
@@ -201,14 +201,14 @@ def test_add_edge(
             ["A", "B", "C"],
             [("A", "B"), ("C", "B")],
             [
-                model.UndirectedEdge(
-                    vertex1=model.Vertex(name=cast(VertexName, "A")),
-                    vertex2=model.Vertex(name=cast(VertexName, "B")),
+                base.UndirectedEdge(
+                    vertex1=base.Vertex(name=cast(VertexName, "A")),
+                    vertex2=base.Vertex(name=cast(VertexName, "B")),
                     weight=1.0,
                 ),
-                model.UndirectedEdge(
-                    vertex1=model.Vertex(name=cast(VertexName, "C")),
-                    vertex2=model.Vertex(name=cast(VertexName, "B")),
+                base.UndirectedEdge(
+                    vertex1=base.Vertex(name=cast(VertexName, "C")),
+                    vertex2=base.Vertex(name=cast(VertexName, "B")),
                     weight=1.0,
                 ),
             ],
@@ -219,14 +219,14 @@ def test_add_edge(
             ["A", "B", "C"],
             [("A", "C", 0.3), ("E", "F", 0.4)],
             [
-                model.UndirectedEdge(
-                    vertex1=model.Vertex(name=cast(VertexName, "A")),
-                    vertex2=model.Vertex(name=cast(VertexName, "C")),
+                base.UndirectedEdge(
+                    vertex1=base.Vertex(name=cast(VertexName, "A")),
+                    vertex2=base.Vertex(name=cast(VertexName, "C")),
                     weight=0.3,
                 ),
-                model.UndirectedEdge(
-                    vertex1=model.Vertex(name=cast(VertexName, "E")),
-                    vertex2=model.Vertex(name=cast(VertexName, "F")),
+                base.UndirectedEdge(
+                    vertex1=base.Vertex(name=cast(VertexName, "E")),
+                    vertex2=base.Vertex(name=cast(VertexName, "F")),
                     weight=0.4,
                 ),
             ],
@@ -237,9 +237,9 @@ def test_add_edge(
             ["A", "B", "C"],
             [("A", "D", 0.3)],
             [
-                model.UndirectedEdge(
-                    vertex1=model.Vertex(name=cast(VertexName, "A")),
-                    vertex2=model.Vertex(name=cast(VertexName, "D")),
+                base.UndirectedEdge(
+                    vertex1=base.Vertex(name=cast(VertexName, "A")),
+                    vertex2=base.Vertex(name=cast(VertexName, "D")),
                     weight=0.3,
                 ),
             ],
@@ -250,9 +250,9 @@ def test_add_edge(
             [],
             [("A", "D", 0.3)],
             [
-                model.UndirectedEdge(
-                    vertex1=model.Vertex(name=cast(VertexName, "A")),
-                    vertex2=model.Vertex(name=cast(VertexName, "D")),
+                base.UndirectedEdge(
+                    vertex1=base.Vertex(name=cast(VertexName, "A")),
+                    vertex2=base.Vertex(name=cast(VertexName, "D")),
                     weight=0.3,
                 ),
             ],
@@ -270,10 +270,10 @@ def test_add_edges_from_list(
 ):
     # given
     g = empty_graph
-    vertices = [model.Vertex(name=name) for name in vertices_in_graph]
+    vertices = [base.Vertex(name=name) for name in vertices_in_graph]
     g._vertices = {vertex.name: vertex for vertex in vertices}
     expected_vertices_in_graph = [
-        model.Vertex(name=name) for name in expected_vertices_in_graph
+        base.Vertex(name=name) for name in expected_vertices_in_graph
     ]
     edges = []
     for edge in edges_params:
@@ -299,12 +299,12 @@ def test_add_edges_from_list(
         (
             [("A", "B"), ("A", "C"), ("B", "C")],
             "A",
-            [model.Vertex(name="B"), model.Vertex(name="C")],
+            [base.Vertex(name="B"), base.Vertex(name="C")],
         ),
         (
             [("A", "B")],
             "A",
-            [model.Vertex(name="B")],
+            [base.Vertex(name="B")],
         ),
         (
             [("C", "B")],
@@ -316,9 +316,9 @@ def test_add_edges_from_list(
 def test_get_neighbors(empty_graph, edges, vertex_name, expected_neighbors):
     # given
     g = empty_graph
-    g.add_vertex(model.Vertex(name=cast(VertexName, "A")))
-    g.add_vertex(model.Vertex(name=cast(VertexName, "B")))
-    g.add_vertex(model.Vertex(name=cast(VertexName, "C")))
+    g.add_vertex(base.Vertex(name=cast(VertexName, "A")))
+    g.add_vertex(base.Vertex(name=cast(VertexName, "B")))
+    g.add_vertex(base.Vertex(name=cast(VertexName, "C")))
     edges = [(Vertex(name=edge[0]), Vertex(name=edge[1]), 1.0) for edge in edges]
     g.add_edges_from_list(edges)
 
@@ -340,14 +340,14 @@ def test_get_neighbors(empty_graph, edges, vertex_name, expected_neighbors):
 def test_contains(empty_graph, vertex_name, expected_result):
     # given
     g = empty_graph
-    g.add_vertex(model.Vertex(name=cast(VertexName, "A")))
+    g.add_vertex(base.Vertex(name=cast(VertexName, "A")))
     g.add_edge(
-        model.Vertex(name=cast(VertexName, "A")),
-        model.Vertex(name=cast(VertexName, "B")),
+        base.Vertex(name=cast(VertexName, "A")),
+        base.Vertex(name=cast(VertexName, "B")),
     )
 
     # when
-    result = model.Vertex(name=vertex_name) in g
+    result = base.Vertex(name=vertex_name) in g
 
     # then
     assert result == expected_result
@@ -356,12 +356,12 @@ def test_contains(empty_graph, vertex_name, expected_result):
 def test_as_dot(empty_graph):
     # given
     g = empty_graph
-    g.add_vertex(model.Vertex(name=cast(VertexName, "A")))
-    g.add_vertex(model.Vertex(name=cast(VertexName, "B")))
-    g.add_vertex(model.Vertex(name=cast(VertexName, "C")))
+    g.add_vertex(base.Vertex(name=cast(VertexName, "A")))
+    g.add_vertex(base.Vertex(name=cast(VertexName, "B")))
+    g.add_vertex(base.Vertex(name=cast(VertexName, "C")))
     g.add_edge(
-        model.Vertex(name=cast(VertexName, "A")),
-        model.Vertex(name=cast(VertexName, "B")),
+        base.Vertex(name=cast(VertexName, "A")),
+        base.Vertex(name=cast(VertexName, "B")),
     )
 
     # when
@@ -376,35 +376,35 @@ def test_as_dot(empty_graph):
     [
         (
             (
-                model.Vertex(name=cast(VertexName, "A")),
-                model.Vertex(name=cast(VertexName, "B")),
+                base.Vertex(name=cast(VertexName, "A")),
+                base.Vertex(name=cast(VertexName, "B")),
             ),
-            model.UndirectedEdge(
-                vertex1=model.Vertex(name=cast(VertexName, "A")),
-                vertex2=model.Vertex(name=cast(VertexName, "B")),
-            ),
-        ),
-        (
-            (
-                model.Vertex(name=cast(VertexName, "B")),
-                model.Vertex(name=cast(VertexName, "A")),
-            ),
-            model.UndirectedEdge(
-                vertex1=model.Vertex(name=cast(VertexName, "A")),
-                vertex2=model.Vertex(name=cast(VertexName, "B")),
+            base.UndirectedEdge(
+                vertex1=base.Vertex(name=cast(VertexName, "A")),
+                vertex2=base.Vertex(name=cast(VertexName, "B")),
             ),
         ),
         (
             (
-                model.Vertex(name=cast(VertexName, "A")),
-                model.Vertex(name=cast(VertexName, "C")),
+                base.Vertex(name=cast(VertexName, "B")),
+                base.Vertex(name=cast(VertexName, "A")),
+            ),
+            base.UndirectedEdge(
+                vertex1=base.Vertex(name=cast(VertexName, "A")),
+                vertex2=base.Vertex(name=cast(VertexName, "B")),
+            ),
+        ),
+        (
+            (
+                base.Vertex(name=cast(VertexName, "A")),
+                base.Vertex(name=cast(VertexName, "C")),
             ),
             None,
         ),
         (
             (
-                model.Vertex(name=cast(VertexName, "C")),
-                model.Vertex(name=cast(VertexName, "D")),
+                base.Vertex(name=cast(VertexName, "C")),
+                base.Vertex(name=cast(VertexName, "D")),
             ),
             None,
         ),
@@ -413,11 +413,11 @@ def test_as_dot(empty_graph):
 def test_get_edge(empty_graph, vertices, expected_edge):
     # given
     g = empty_graph
-    g.add_vertex(model.Vertex(name=cast(VertexName, "A")))
-    g.add_vertex(model.Vertex(name=cast(VertexName, "B")))
+    g.add_vertex(base.Vertex(name=cast(VertexName, "A")))
+    g.add_vertex(base.Vertex(name=cast(VertexName, "B")))
     g.add_edge(
-        model.Vertex(name=cast(VertexName, "A")),
-        model.Vertex(name=cast(VertexName, "B")),
+        base.Vertex(name=cast(VertexName, "A")),
+        base.Vertex(name=cast(VertexName, "B")),
     )
 
     # when
@@ -430,30 +430,30 @@ def test_get_edge(empty_graph, vertices, expected_edge):
 def test_get_shortest_paths(empty_graph):
     # given
     g = empty_graph
-    g.add_vertex(model.Vertex(name=cast(VertexName, "A")))
-    g.add_vertex(model.Vertex(name=cast(VertexName, "B")))
-    g.add_vertex(model.Vertex(name=cast(VertexName, "C")))
-    g.add_vertex(model.Vertex(name=cast(VertexName, "D")))
-    g.add_vertex(model.Vertex(name=cast(VertexName, "E")))
+    g.add_vertex(base.Vertex(name=cast(VertexName, "A")))
+    g.add_vertex(base.Vertex(name=cast(VertexName, "B")))
+    g.add_vertex(base.Vertex(name=cast(VertexName, "C")))
+    g.add_vertex(base.Vertex(name=cast(VertexName, "D")))
+    g.add_vertex(base.Vertex(name=cast(VertexName, "E")))
     g.add_edge(
-        model.Vertex(name=cast(VertexName, "A")),
-        model.Vertex(name=cast(VertexName, "B")),
+        base.Vertex(name=cast(VertexName, "A")),
+        base.Vertex(name=cast(VertexName, "B")),
     )
     g.add_edge(
-        model.Vertex(name=cast(VertexName, "A")),
-        model.Vertex(name=cast(VertexName, "C")),
+        base.Vertex(name=cast(VertexName, "A")),
+        base.Vertex(name=cast(VertexName, "C")),
     )
     g.add_edge(
-        model.Vertex(name=cast(VertexName, "B")),
-        model.Vertex(name=cast(VertexName, "D")),
+        base.Vertex(name=cast(VertexName, "B")),
+        base.Vertex(name=cast(VertexName, "D")),
     )
     g.add_edge(
-        model.Vertex(name=cast(VertexName, "C")),
-        model.Vertex(name=cast(VertexName, "D")),
+        base.Vertex(name=cast(VertexName, "C")),
+        base.Vertex(name=cast(VertexName, "D")),
     )
 
     # when
-    shortest_paths = g.get_shortest_paths(model.Vertex(name=cast(VertexName, "A")))
+    shortest_paths = g.get_shortest_paths(base.Vertex(name=cast(VertexName, "A")))
 
     # then
     assert shortest_paths == {
@@ -461,5 +461,5 @@ def test_get_shortest_paths(empty_graph):
         "B": 1,
         "C": 1,
         "D": 2,
-        "E": model.INFINITY,
+        "E": base.INFINITY,
     }
