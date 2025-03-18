@@ -1,5 +1,5 @@
 import numpy as np
-from graph.base import Graph, Vertex, VertexName
+from graph.base import Graph, Vertex, VertexName, GraphError
 
 
 def _init_erdos_renyi_graph(graph: Graph, n: int, p: float) -> Graph:
@@ -41,17 +41,17 @@ def _init_gilbert_graph(graph: Graph, n: int, m: int) -> Graph:
 
 
 class RandomGraph(Graph):
-    def __init__(self, n: int, p: float):
-        super().__init__()
-        for i in range(n):
-            self.add_vertex(Vertex(name=VertexName(f"{i}")))
-        for i in range(n):
-            edge_exists = np.random.random(size=n - i - 1) < p
-            for j in range(i + 1, n):
-                if edge_exists[j - i - 1]:
-                    self.add_edge(
-                        Vertex(name=VertexName(f"{i}")), Vertex(name=VertexName(f"{j}"))
-                    )
+    def __new__(cls, **kwargs):
+        if "n" in kwargs and "m" in kwargs:
+            return _init_gilbert_graph(Graph(), **kwargs)
+        elif "n" in kwargs and "p" in kwargs:
+            return _init_erdos_renyi_graph(Graph(), **kwargs)
+        else:
+            msg = "Init arguments do not match any model"
+            raise GraphError(msg)
+
+    def __init__(self, **kwargs):
+        pass
 
 
 class WattStrogatzGraph(Graph):
