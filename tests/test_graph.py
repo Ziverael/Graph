@@ -16,11 +16,6 @@ def test_init_graph():
     assert g.is_weighted
 
 
-@pytest.fixture
-def empty_graph():
-    return base.Graph()
-
-
 def test_add_vertex(empty_graph):
     # given
     g = empty_graph
