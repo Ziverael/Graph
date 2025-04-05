@@ -1,14 +1,16 @@
 import logging
 from pydantic import BaseModel, Field
-from typing import NewType, cast
+from typing import NewType, cast, Literal
 from pathlib import Path
 import heapq  # I hate this implementation
+import numpy as np
 
 VertexName = NewType("VertexName", str)
+FileFormat = Literal["dot", "csv"]
 
 UNDEFINED_VERTEX = cast(VertexName, "UNDEFINED")
 INFINITY = float("inf")
-
+UNKNOWN_MEAN_DEGREE = -1
 logger = logging.getLogger(__name__)
 
 
@@ -36,6 +38,7 @@ class Graph:
     def __init__(self):
         self._vertices: dict[VertexName, Vertex] = {}
         self._edges: list[UndirectedEdge] = []
+        self._mean_degree: float = UNKNOWN_MEAN_DEGREE
 
     def add_vertex(self, vertex: Vertex):
         if _does_vertex_exist(vertex, self._vertices):
@@ -82,9 +85,17 @@ class Graph:
             if Vertex(name=vertex_name) in edge
         ]
 
-    def save_graph(self, file_name: str):
-        with Path(file_name).open("w") as f:
-            f.write(self.as_dot())
+    def get_strangers(self, vertex_name: VertexName) -> list[Vertex]:
+        excluded = [*self.get_neighbors(vertex_name), Vertex(name=vertex_name)]
+        return [vertex for vertex in self._vertices.values() if vertex not in excluded]
+
+    def save_graph(self, file_name: str, format_: FileFormat = "dot"):
+        if format_ == "dot":
+            with Path(file_name).open("w") as f:
+                f.write(self.as_dot())
+        elif format_ == "csv":
+            with Path(file_name).open("w") as f:
+                f.write(self.as_csv())
 
     def as_dot(self) -> str:
         dot_representation = "graph G {"
@@ -145,6 +156,12 @@ class Graph:
                 return edge
         return None
 
+    def as_csv(self) -> str:
+        """Gephi tool csv. Basically it does not support weighted edges and base on edges only."""
+        return "\n".join(
+            [f"{edge.vertex1.name},{edge.vertex2.name}" for edge in self._edges]
+        )
+
     @property
     def is_undirected(self) -> bool:
         return True
@@ -163,3 +180,38 @@ class Graph:
 
     def __contains__(self, vertex: Vertex) -> bool:
         return _does_vertex_exist(vertex, self._vertices)
+
+    @property
+    def mean_degree(self) -> float:
+        if self._mean_degree == UNKNOWN_MEAN_DEGREE:
+            if len(self._vertices) == 0:
+                self._mean_degree = float("nan")
+            else:
+                self._mean_degree = sum(
+                    len(self.get_neighbors(v.name)) for v in self._vertices.values()
+                ) / len(self._vertices)
+        return self._mean_degree
+
+
+class FlexibleGraph(Graph):
+    def remove_edge(self, edge: UndirectedEdge) -> None:
+        if edge not in self._edges:
+            msg = f"Edge {edge.vertex1.name} -- {edge.vertex2.name} not found"
+            raise GraphError(msg)
+        self._edges.remove(edge)
+
+    def get_random_neighbor(self, vertex: Vertex) -> Vertex:
+        return np.random.choice(self.get_neighbors(vertex.name))
+
+    def get_random_stranger(self, vertex: Vertex) -> Vertex:
+        return np.random.choice(self.get_strangers(vertex.name))
+
+    def randomly_replace_edge(
+        self, edge: UndirectedEdge, static_vertex: Vertex
+    ) -> None:
+        if edge not in self._edges or static_vertex not in edge:
+            msg = f"Cannot replace edge ({edge.vertex1.name}, {edge.vertex2.name}) with static vertex {static_vertex.name}"
+            raise GraphError(msg)
+        new_vertex = self.get_random_neighbor(static_vertex)
+        self._edges.remove(edge)
+        self.add_edge(static_vertex, new_vertex)

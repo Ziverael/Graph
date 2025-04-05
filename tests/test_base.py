@@ -3,6 +3,9 @@ from graph.base import Vertex, VertexName
 import pytest
 import logging
 from typing import cast
+from collections import defaultdict
+import re
+import math
 
 
 def test_init_graph():
@@ -458,3 +461,249 @@ def test_get_shortest_paths(empty_graph):
         "D": 2,
         "E": base.INFINITY,
     }
+
+
+@pytest.mark.parametrize(
+    ("edges", "expected_csv"),
+    [
+        pytest.param([], "", id="empty-graph"),
+        pytest.param(
+            [("A", "B"), ("A", "C"), ("B", "D"), ("C", "D")],
+            "A,B\nA,C\nB,D\nC,D",
+            id="simple-graph",
+        ),
+    ],
+)
+def test_as_csv(empty_graph, edges, expected_csv):
+    # given
+    g = empty_graph
+    for edge in edges:
+        g.add_edge(Vertex(name=edge[0]), Vertex(name=edge[1]))
+
+    # when
+    csv = g.as_csv()
+
+    # then
+    assert csv == expected_csv
+
+
+@pytest.fixture
+def empty_flexible_graph():
+    return base.FlexibleGraph()
+
+
+def test_get_random_neighbor(empty_flexible_graph):
+    # given
+    g = empty_flexible_graph
+    g.add_vertex(base.Vertex(name=cast(VertexName, "A")))
+    g.add_vertex(base.Vertex(name=cast(VertexName, "B")))
+    g.add_vertex(base.Vertex(name=cast(VertexName, "C")))
+    g.add_vertex(base.Vertex(name=cast(VertexName, "D")))
+    g.add_edge(
+        base.Vertex(name=cast(VertexName, "A")), base.Vertex(name=cast(VertexName, "B"))
+    )
+    g.add_edge(
+        base.Vertex(name=cast(VertexName, "A")), base.Vertex(name=cast(VertexName, "C"))
+    )
+    g.add_edge(
+        base.Vertex(name=cast(VertexName, "A")), base.Vertex(name=cast(VertexName, "D"))
+    )
+    mc_steps = 1_000
+    counts: dict[VertexName, int] = defaultdict(int)
+    eps = 0.1
+
+    # when
+    for _ in range(mc_steps):
+        neighbor = g.get_random_neighbor(base.Vertex(name=cast(VertexName, "A")))
+        counts[neighbor.name] += 1
+    means = {k: v / mc_steps for k, v in counts.items()}
+
+    # then
+    assert means[base.Vertex(name=cast(VertexName, "B")).name] == pytest.approx(
+        0.33, abs=eps
+    )
+    assert means[base.Vertex(name=cast(VertexName, "C")).name] == pytest.approx(
+        0.33, abs=eps
+    )
+    assert means[base.Vertex(name=cast(VertexName, "D")).name] == pytest.approx(
+        0.33, abs=eps
+    )
+
+
+def test_randomly_replace_edge__edge_not_in_graph():
+    # given
+    g = base.FlexibleGraph()
+    g.add_vertex(base.Vertex(name=cast(VertexName, "A")))
+    g.add_vertex(base.Vertex(name=cast(VertexName, "B")))
+    edge = base.UndirectedEdge(
+        vertex1=base.Vertex(name=cast(VertexName, "A")),
+        vertex2=base.Vertex(name=cast(VertexName, "B")),
+    )
+    expected_error_message = re.escape(
+        "Cannot replace edge (A, B) with static vertex A"
+    )
+
+    # when / then
+    with pytest.raises(base.GraphError, match=expected_error_message):
+        g.randomly_replace_edge(edge, base.Vertex(name=cast(VertexName, "A")))
+
+
+def test_randomly_replace_edge__static_vertex_not_in_edge():
+    # given
+    g = base.FlexibleGraph()
+    g.add_vertex(base.Vertex(name=cast(VertexName, "A")))
+    g.add_vertex(base.Vertex(name=cast(VertexName, "B")))
+    g.add_vertex(base.Vertex(name=cast(VertexName, "C")))
+    edge = base.UndirectedEdge(
+        vertex1=base.Vertex(name=cast(VertexName, "A")),
+        vertex2=base.Vertex(name=cast(VertexName, "B")),
+    )
+    expected_error_message = re.escape(
+        "Cannot replace edge (A, B) with static vertex C"
+    )
+
+    # when / then
+    with pytest.raises(base.GraphError, match=expected_error_message):
+        g.randomly_replace_edge(edge, base.Vertex(name=cast(VertexName, "C")))
+
+
+@pytest.mark.parametrize(
+    ("vertices_names", "edges", "expected_strangers"),
+    [
+        pytest.param([], [], [], id="empty-graph"),
+        pytest.param(["A", "B", "C"], [("A", "B"), ("A", "C")], [], id="no-strangers"),
+        pytest.param(
+            ["A", "B", "C", "D", "E", "F", "G"],
+            [("A", "B"), ("A", "C"), ("B", "C"), ("D", "E"), ("D", "F"), ("E", "F")],
+            [
+                base.Vertex(name=cast(VertexName, "D")),
+                base.Vertex(name=cast(VertexName, "E")),
+                base.Vertex(name=cast(VertexName, "F")),
+                base.Vertex(name=cast(VertexName, "G")),
+            ],
+            id="strangers",
+        ),
+    ],
+)
+def test_get_strangers(empty_graph, vertices_names, edges, expected_strangers):
+    # given
+    g = empty_graph
+    for vertex_name in vertices_names:
+        g.add_vertex(base.Vertex(name=cast(VertexName, vertex_name)))
+    for edge in edges:
+        g.add_edge(Vertex(name=edge[0]), Vertex(name=edge[1]))
+
+    # when
+    strangers = g.get_strangers(cast(VertexName, "A"))
+
+    # then
+    assert strangers == expected_strangers
+
+
+def test_get_random_stranger(empty_flexible_graph):
+    # given
+    g = empty_flexible_graph
+    g.add_vertex(base.Vertex(name=cast(VertexName, "A")))
+    g.add_vertex(base.Vertex(name=cast(VertexName, "B")))
+    g.add_vertex(base.Vertex(name=cast(VertexName, "C")))
+    g.add_vertex(base.Vertex(name=cast(VertexName, "D")))
+    g.add_vertex(base.Vertex(name=cast(VertexName, "E")))
+    g.add_edge(
+        base.Vertex(name=cast(VertexName, "A")), base.Vertex(name=cast(VertexName, "B"))
+    )
+    g.add_edge(
+        base.Vertex(name=cast(VertexName, "B")), base.Vertex(name=cast(VertexName, "D"))
+    )
+    mc_steps = 1_000
+    counts: dict[VertexName, int] = defaultdict(int)
+    eps = 0.1
+
+    # when
+    for _ in range(mc_steps):
+        stranger = g.get_random_stranger(base.Vertex(name=cast(VertexName, "A")))
+        counts[stranger.name] += 1
+    means = {k: v / mc_steps for k, v in counts.items()}
+    # then
+    assert means[base.Vertex(name=cast(VertexName, "C")).name] == pytest.approx(
+        0.33, abs=eps
+    )
+    assert means[base.Vertex(name=cast(VertexName, "D")).name] == pytest.approx(
+        0.33, abs=eps
+    )
+    assert means[base.Vertex(name=cast(VertexName, "E")).name] == pytest.approx(
+        0.33, abs=eps
+    )
+    assert means.get(base.Vertex(name=cast(VertexName, "A")).name, 0) == 0.0
+
+
+@pytest.mark.parametrize(
+    ("vertices", "edges", "expected_mean_degree"),
+    [
+        pytest.param([], [], float("nan"), id="empty-graph"),
+        pytest.param(["A", "B", "C"], [], 0, id="no-edges"),
+        pytest.param(
+            ["A", "B", "C"], [("A", "B"), ("A", "C")], 1.333, id="simple-graph"
+        ),
+        pytest.param(
+            ["A", "B", "C", "D", "E", "F", "G"],
+            [
+                ("A", "B"),
+                ("A", "C"),
+                ("A", "D"),
+                ("A", "E"),
+                ("A", "F"),
+                ("E", "F"),
+                ("E", "G"),
+                ("F", "G"),
+            ],
+            2.286,
+            id="simple-graph",
+        ),
+    ],
+)
+def test_mean_degree(empty_graph, vertices, edges, expected_mean_degree):
+    # given
+    g = empty_graph
+    for vertex_name in vertices:
+        g.add_vertex(base.Vertex(name=cast(VertexName, vertex_name)))
+    for edge in edges:
+        g.add_edge(Vertex(name=edge[0]), Vertex(name=edge[1]))
+
+    # when
+    mean_degree = g.mean_degree
+
+    # then
+    if math.isnan(expected_mean_degree):
+        assert math.isnan(mean_degree)
+    else:
+        assert mean_degree == pytest.approx(expected_mean_degree, abs=0.001)
+
+
+@pytest.mark.parametrize(
+    ("vertices", "edges", "edges_after_removal"),
+    [
+        pytest.param(["A", "B"], [], [], id="no-edge"),
+        pytest.param(["A", "B", "C"], [("A", "B")], [], id="edge-to-remove"),
+    ],
+)
+def test_remove_edge(empty_flexible_graph, vertices, edges, edges_after_removal):
+    # given
+    g = empty_flexible_graph
+    for vertex_name in vertices:
+        g.add_vertex(base.Vertex(name=cast(VertexName, vertex_name)))
+    for edge in edges:
+        g.add_edge(Vertex(name=edge[0]), Vertex(name=edge[1]))
+    edge_to_remove = base.UndirectedEdge(
+        vertex1=base.Vertex(name=cast(VertexName, "A")),
+        vertex2=base.Vertex(name=cast(VertexName, "B")),
+    )
+
+    # when / then
+    if len(edges) > 0:
+        g.remove_edge(edge_to_remove)
+    else:
+        expected_error_message = re.escape("Edge A -- B not found")
+        with pytest.raises(base.GraphError, match=expected_error_message):
+            g.remove_edge(edge_to_remove)
+
+    assert g.edges == edges_after_removal
