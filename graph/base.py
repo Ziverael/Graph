@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 from typing import NewType, cast, Literal
 from pathlib import Path
 import heapq  # I hate this implementation
-import numpy as np
+import random
 
 VertexName = NewType("VertexName", str)
 FileFormat = Literal["dot", "csv"]
@@ -15,6 +15,9 @@ logger = logging.getLogger(__name__)
 
 
 class GraphError(Exception): ...
+
+
+class DuplicateEdgeError(GraphError): ...
 
 
 class Vertex(BaseModel):
@@ -56,13 +59,23 @@ class Graph:
                     vertex.name,
                 )
 
-    def add_edge(self, vertex_from: Vertex, vertex_to: Vertex, weight: float = 1.0):
+    def add_edge(
+        self,
+        vertex_from: Vertex,
+        vertex_to: Vertex,
+        weight: float = 1.0,
+        allow_duplicates: bool = False,
+    ):
         for vertex in [vertex_from, vertex_to]:
             if not _does_vertex_exist(vertex, self._vertices):
                 logger.warning(
                     "Vertex %s does not exist. Adding it to the graph.", vertex.name
                 )
                 self.add_vertex(vertex)
+        if not allow_duplicates:
+            if self.get_edge((vertex_from, vertex_to)) is not None:
+                msg = f"Edge {vertex_from.name} -- {vertex_to.name} already exists"
+                raise DuplicateEdgeError(msg)
         self._edges.append(
             UndirectedEdge(vertex1=vertex_from, vertex2=vertex_to, weight=weight)
         )
@@ -181,6 +194,9 @@ class Graph:
     def __contains__(self, vertex: Vertex) -> bool:
         return _does_vertex_exist(vertex, self._vertices)
 
+    def get_degree(self, vertex: Vertex) -> int:
+        return len(self.get_neighbors(vertex.name))
+
     @property
     def mean_degree(self) -> float:
         if self._mean_degree == UNKNOWN_MEAN_DEGREE:
@@ -188,7 +204,7 @@ class Graph:
                 self._mean_degree = float("nan")
             else:
                 self._mean_degree = sum(
-                    len(self.get_neighbors(v.name)) for v in self._vertices.values()
+                    self.get_degree(v) for v in self._vertices.values()
                 ) / len(self._vertices)
         return self._mean_degree
 
@@ -201,10 +217,10 @@ class FlexibleGraph(Graph):
         self._edges.remove(edge)
 
     def get_random_neighbor(self, vertex: Vertex) -> Vertex:
-        return np.random.choice(self.get_neighbors(vertex.name))
+        return random.choice(self.get_neighbors(vertex.name))
 
     def get_random_stranger(self, vertex: Vertex) -> Vertex:
-        return np.random.choice(self.get_strangers(vertex.name))
+        return random.choice(self.get_strangers(vertex.name))
 
     def randomly_replace_edge(
         self, edge: UndirectedEdge, static_vertex: Vertex
