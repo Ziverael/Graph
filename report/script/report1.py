@@ -17,6 +17,7 @@
 
 # %%
 from graph.model import (
+    BarabasiAlbertGraph,
     RandomGraph,
     WattStrogatzGraph,
 )
@@ -24,7 +25,6 @@ from graph.base import Graph
 import matplotlib.pyplot as plt
 import matplotlib
 import numpy as np
-from matplotlib.widgets import Slider
 from rich.table import Table
 from scipy.stats import poisson
 
@@ -230,26 +230,32 @@ plt.show()
 get_stats(g)
 
 # %%
-fig, ax = plt.subplots()
-plt.subplots_adjust(left=0.25, bottom=0.25)
+k = 12
+beta = 0.1
+g = WattStrogatzGraph(n, k=k, beta=beta)
+degrees = np.array([g.get_degree(v) for v in g.vertices])
+var_of_degree = np.var(degrees)
 
-
-axcolor = "lightgoldenrodyellow"
-ax_n_slider = plt.axes([0.25, 0.15, 0.65, 0.03], facecolor=axcolor)
-ax_p_slider = plt.axes([0.25, 0.1, 0.65, 0.03], facecolor=axcolor)
-n_size = Slider(ax_n_slider, "N", 1, 5_000.0, valinit=15)
-probability = Slider(ax_p_slider, "p", 0.0, 1.0, valinit=0.5)
-
-
-def update(val):
-    n = n_size.val
-    p = probability.val
-    line.set_ydata(np.linspace(1, 100, 100) * p)
-    fig.canvas.draw_idle()
-
-
-(line,) = ax.plot(np.linspace(1, 100, 100), np.linspace(1, 100, 100) * 2)
-
-n_size.on_changed(update)
-probability.on_changed(update)
+# %%
+fig, ax = plot_degree_distribution(degrees, bins=11)
+mu = 11
+x = np.arange(poisson.ppf(0.01, mu), poisson.ppf(0.99, mu))
+ys = poisson.pmf(x, mu)
+ax.scatter(x + 2, ys, color="red")
+ax.set_title("Degree distribution")
+ax.set_xlabel(r"$k$")
+ax.set_ylabel(r"$P(k=x)$")
 plt.show()
+get_stats(g)
+
+# %% [markdown]
+# ## Barabasi-Albert
+
+# %%
+n0 = 1980
+n = 2000
+m = 3
+g = BarabasiAlbertGraph(n0, n, m)
+
+# %% [markdown]
+#
