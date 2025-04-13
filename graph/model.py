@@ -1,165 +1,174 @@
-import logging
-from pydantic import BaseModel, Field
-from typing import NewType, cast
-from pathlib import Path
-import heapq  # I hate this implementation
-
-VertexName = NewType("VertexName", str)
-
-UNDEFINED_VERTEX = cast(VertexName, "UNDEFINED")
-INFINITY = float("inf")
-
-logger = logging.getLogger(__name__)
+import numpy as np
+import random
+from graph.base import (
+    Graph,
+    Vertex,
+    VertexName,
+    GraphError,
+    FlexibleGraph,
+)
+from graph.utils import get_unique_combinations, is_link_in_ring_lattice
 
 
-class GraphError(Exception): ...
+def _init_connected_graph(graph: Graph, n: int) -> Graph:
+    for i in range(n):
+        graph.add_vertex(Vertex(name=VertexName(f"{i}")))
+    for i in range(n):
+        for j in range(i + 1, n):
+            graph.add_edge(
+                Vertex(name=VertexName(f"{i}")), Vertex(name=VertexName(f"{j}"))
+            )
+    return graph
 
 
-class Vertex(BaseModel):
-    name: VertexName
-
-
-class UndirectedEdge(BaseModel):
-    vertex1: Vertex
-    vertex2: Vertex
-    weight: float = Field(default=1.0, ge=0, le=1.0)
-
-    def __contains__(self, vertex: Vertex) -> bool:
-        return self.vertex1 == vertex or self.vertex2 == vertex
-
-
-def _does_vertex_exist(vertex: Vertex, vertices: dict[VertexName, Vertex]) -> bool:
-    return vertex.name in vertices
-
-
-class Graph:
-    def __init__(self):
-        self._vertices: dict[VertexName, Vertex] = {}
-        self._edges: list[UndirectedEdge] = []
-
-    def add_vertex(self, vertex: Vertex):
-        if _does_vertex_exist(vertex, self._vertices):
-            msg = f"Vertex {vertex.name} already exists"
-            raise GraphError(msg)
-        self._vertices[vertex.name] = vertex
-
-    def add_vertices_from_list(self, vertices: list[Vertex]):
-        for vertex in vertices:
-            try:
-                self.add_vertex(vertex)
-            except GraphError:
-                logger.warning(
-                    "Cannot add vertex %s to graph. This vertex will be ignored.",
-                    vertex.name,
+def _init_erdos_renyi_graph(graph: Graph, n: int, p: float) -> Graph:
+    """Init Erdos-Renyi graph.
+    n - number of vertices
+    p - probability of edge between any two vertices
+    """
+    for i in range(n):
+        graph.add_vertex(Vertex(name=VertexName(f"{i}")))
+    for i in range(n):
+        edge_exists = np.random.random(size=n - i - 1) < p
+        for j in range(i + 1, n):
+            if edge_exists[j - i - 1]:
+                graph.add_edge(
+                    Vertex(name=VertexName(f"{i}")), Vertex(name=VertexName(f"{j}"))
                 )
+    return graph
 
-    def add_edge(self, vertex_from: Vertex, vertex_to: Vertex, weight: float = 1.0):
-        for vertex in [vertex_from, vertex_to]:
-            if not _does_vertex_exist(vertex, self._vertices):
-                logger.warning(
-                    "Vertex %s does not exist. Adding it to the graph.", vertex.name
-                )
-                self.add_vertex(vertex)
-        self._edges.append(
-            UndirectedEdge(vertex1=vertex_from, vertex2=vertex_to, weight=weight)
+
+def _init_gilbert_graph(graph: Graph, n: int, m: int) -> Graph:
+    """Init Gilbert graph.
+    n - number of vertices
+    m - number of edges
+    """
+    for i in range(n):
+        graph.add_vertex(Vertex(name=VertexName(f"{i}")))
+
+    pairs: set[tuple[int, int]] = set()
+    while len(pairs) < m:
+        new_pairs = np.random.randint(0, n, size=(m - len(pairs), 2))
+        new_pairs = new_pairs[new_pairs[:, 0] < new_pairs[:, 1]]
+        pairs.update(((i, j) for i, j in new_pairs))
+    for i, j in pairs:
+        graph.add_edge(
+            Vertex(name=VertexName(f"{i}")),
+            Vertex(name=VertexName(f"{j}")),
         )
+    return graph
 
-    def add_edges_from_list(
-        self, edges: list[tuple[Vertex, Vertex, float]] | list[tuple[Vertex, Vertex]]
-    ):
-        for edge in edges:
-            try:
-                self.add_edge(*edge)
-            except Exception:
-                logger.warning(
-                    "Cannot add edge %s to graph. This edge will be ignored.", edge
+
+class RandomGraph(Graph):
+    def __init__(self, n: int, m: int | None = None, p: float | None = None):
+        super().__init__()
+        if m is not None and p is None:
+            _init_gilbert_graph(self, n=n, m=m)
+        elif p is not None and m is None:
+            _init_erdos_renyi_graph(self, n=n, p=p)
+        else:
+            msg = "Init arguments do not match any model"
+            raise GraphError(msg)
+
+
+def _init_ring_lattice_graph(graph: FlexibleGraph, n: int, k: int) -> FlexibleGraph:
+    """Init ring lattice graph.
+    n - number of vertices
+    k - mean degree (even int)
+    """
+    if k % 2 == 1:
+        msg = "k must be even"
+        raise GraphError(msg)
+
+    graph.add_vertices_from_list(
+        list(Vertex(name=VertexName(f"{i}")) for i in range(1, n + 1))
+    )
+    for i, j in get_unique_combinations(np.arange(1, n + 1), np.arange(1, n + 1)):
+        if is_link_in_ring_lattice(i, j, k, n):
+            graph.add_edge(
+                Vertex(name=VertexName(f"{i}")), Vertex(name=VertexName(f"{j}"))
+            )
+    return graph
+
+
+class LatticeRingGraph(FlexibleGraph):
+    def __init__(self, n: int, k: int):
+        super().__init__()
+        _init_ring_lattice_graph(self, n, k)
+
+
+def _init_watts_strogatz_graph(
+    graph: FlexibleGraph, n: int, k: int, beta: float
+) -> FlexibleGraph:
+    """Init Watts-Strogatz graph.
+    n - number of vertices
+    k - mean degree (even int)
+    beta such that 0 <= beta <= 1
+    """
+    _init_ring_lattice_graph(graph, n, k)
+    old_edges = graph.edges
+    for edge in old_edges:
+        if np.random.random() <= beta:
+            graph.remove_edge(edge)
+            new_vertices_names = random.sample(graph.vertices, k=2)
+            while (
+                graph.get_edge((new_vertices_names[0], new_vertices_names[1]))
+                is not None
+            ):
+                new_vertices_names = random.sample(graph.vertices, k=2)
+            graph.add_edge(
+                vertex_from=new_vertices_names[0],
+                vertex_to=new_vertices_names[1],
+            )
+    return graph
+
+
+class WattStrogatzGraph(FlexibleGraph):
+    def __init__(self, n: int, k: int, beta: float):
+        super().__init__()
+        _init_watts_strogatz_graph(self, n=n, k=k, beta=beta)
+
+
+def _init_barabasi_albert_graph(graph: Graph, n0: int, n: int, m: int) -> Graph:
+    """Init Barabasi-Albert graph.
+    n0 - number of initial vertices
+    n - number of vertices
+    m - number of neighbors to connect to
+    """
+    if n <= m:
+        msg = f"Initial number of nodes ({n0}) must be greater than sampling size ({m})"
+        raise GraphError(msg)
+    elif n0 <= m:
+        msg = f"Initial number of nodes ({n0}) must be greater than sampling size ({m})"
+        raise GraphError(msg)
+    elif n <= n0:
+        msg = f"Initial number of nodes ({n0}) must be less than final number of nodes ({n})"
+        raise GraphError(msg)
+    graph = _init_connected_graph(graph, n0)
+
+    total_vertices = n0
+
+    while total_vertices < n:
+        selected_vertices_idx = np.random.choice(
+            np.arange(len(graph.vertices)), size=m, replace=False
+        )
+        degrees = np.array([graph.get_degree(v) for v in graph.vertices])
+        probs = degrees / np.sum(degrees)
+        edge_exists = np.random.random(size=m) < probs[selected_vertices_idx]
+
+        graph.add_vertex(
+            Vertex(name=VertexName(str(total_vertices := total_vertices + 1)))
+        )
+        for idx, flag in zip(selected_vertices_idx, edge_exists):
+            if flag:
+                graph.add_edge(
+                    vertex_from=graph.vertices[idx],
+                    vertex_to=graph.vertices[total_vertices - 1],
                 )
+    return graph
 
-    def get_neighbors(self, vertex_name: VertexName) -> list[Vertex]:
-        return [
-            edge.vertex1 if edge.vertex2.name == vertex_name else edge.vertex2
-            for edge in self._edges
-            if Vertex(name=vertex_name) in edge
-        ]
 
-    def save_graph(self, file_name: str):
-        with Path(file_name).open("w") as f:
-            f.write(self.as_dot())
-
-    def as_dot(self) -> str:
-        dot_representation = "graph G {"
-        vertices_names_in_edges = set()
-        for edge in self._edges:
-            dot_representation += f'"{edge.vertex1.name}" -- "{edge.vertex2.name}" [weight={edge.weight}];'
-            vertices_names_in_edges.add(edge.vertex1.name)
-            vertices_names_in_edges.add(edge.vertex2.name)
-        for vertex in self._vertices.values():
-            if vertex.name not in vertices_names_in_edges:
-                dot_representation += f'"{vertex.name}";'
-        dot_representation += "}"
-        return dot_representation
-
-    def get_shortest_paths(self, vertex_from: Vertex) -> dict[VertexName, float]:
-        graph_vertices_names = set(self._vertices.keys())
-        vertices_distances_queue: list[tuple[float, VertexName]] = []
-        distances: dict[VertexName, float] = {}
-        prev: dict[VertexName, VertexName] = {}
-
-        distances[vertex_from.name] = 0
-        heapq.heappush(vertices_distances_queue, (0, vertex_from.name))
-        graph_vertices_names.remove(vertex_from.name)
-
-        for v_name in graph_vertices_names:
-            distances[v_name] = INFINITY
-            prev[v_name] = UNDEFINED_VERTEX
-            heapq.heappush(vertices_distances_queue, (INFINITY, v_name))
-
-        while vertices_distances_queue:
-            _, current_vertex_name = heapq.heappop(vertices_distances_queue)
-            for neighbor_vertex in self.get_neighbors(current_vertex_name):
-                if (
-                    current_path_weight := distances[current_vertex_name]
-                    + cast(
-                        UndirectedEdge,
-                        self.get_edge(
-                            (
-                                Vertex(name=current_vertex_name),
-                                Vertex(name=neighbor_vertex.name),
-                            )
-                        ),
-                    ).weight
-                ) < distances[neighbor_vertex.name]:
-                    distances[neighbor_vertex.name] = current_path_weight
-                    prev[neighbor_vertex.name] = current_vertex_name
-                    # This is not optimal, because vertices paths length are not updated,
-                    # because heapq do not deliver decrease_priority method.
-                    heapq.heappush(
-                        vertices_distances_queue,
-                        (current_path_weight, neighbor_vertex.name),
-                    )
-        return distances
-
-    def get_edge(self, vertices: tuple[Vertex, Vertex]) -> UndirectedEdge | None:
-        for edge in self._edges:
-            if vertices[0] in edge and vertices[1] in edge:
-                return edge
-        return None
-
-    @property
-    def is_undirected(self) -> bool:
-        return True
-
-    @property
-    def is_weighted(self) -> bool:
-        return all([edge.weight == 1.0 for edge in self._edges])
-
-    @property
-    def vertices(self) -> list[Vertex]:
-        return list(self._vertices.values())
-
-    @property
-    def edges(self) -> list[UndirectedEdge]:
-        return self._edges
-
-    def __contains__(self, vertex: Vertex) -> bool:
-        return _does_vertex_exist(vertex, self._vertices)
+class BarabasiAlbertGraph(Graph):
+    def __init__(self, n0: int, n: int, m: int):
+        super().__init__()
+        _init_barabasi_albert_graph(self, n0=n0, n=n, m=m)
