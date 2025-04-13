@@ -17,6 +17,13 @@ ipympl = "^0.9.7"
 jupytext = "^1.17.0"
 rich = "^14.0.0"
 scipy = "^1.15.2"
+scrapy = "2.11.1"
+scrapy-splash = "^0.11.1"
+networkx = "3.4.2"
+pyvis = "^0.3.2"
+holoviews = "^1.20.2"
+datashader = "^0.18.0"
+jupyter-bokeh = "^4.0.5"
 
 
 [tool.poetry.group.dev.dependencies]

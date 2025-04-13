@@ -1,0 +1,6 @@
+services:
+  splash:
+    container_name: graph_splash
+    image: scrapinghub/splash
+    ports:
+      - 127.0.0.1:14290:8050
