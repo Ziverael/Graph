@@ -1,12 +1,4 @@
 from pathlib import Path
-# Scrapy settings for wiki_scraper project
-#
-# For simplicity, this file contains only settings considered important or
-# commonly used. You can find more settings consulting the documentation:
-#
-#     https://docs.scrapy.org/en/latest/topics/settings.html
-#     https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
-#     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
 BOT_NAME = "wiki_scraper"
 
@@ -107,13 +99,10 @@ REQUEST_FINGERPRINTER_CLASS = "scrapy_splash.SplashRequestFingerprinter"
 DUPEFILTER_CLASS = "scrapy_splash.SplashAwareDupeFilter"
 
 
-# Obey robots.txt (recommended for Wikipedia)
-ROBOTSTXT_OBEY = True
-
 # Limit for each page is random value to avoid static number of branches
 # per search.
-CRAWLER_LINKS_LOWER_THRESHOLD = 15
-CRAWLER_LINKS_UPPER_THRESHOLD = 20
+CRAWLER_LINKS_LOWER_THRESHOLD = 5
+CRAWLER_LINKS_UPPER_THRESHOLD = 12
 # Download delay provide sequential work and concurrency no longer works
 # To avoid overloading target website we use wait in request
 DOWNLOAD_DELAY = 0
@@ -122,13 +111,13 @@ CONCURRENT_REQUESTS = 16
 CONCURRENT_REQUESTS_PER_DOMAIN = 16
 SPLASH_CONCURRENT_REQUESTS = 16
 # Limit crawl depth
-DEPTH_LIMIT = 5
+DEPTH_LIMIT = 4
 # Optional for debugging depth
 DEPTH_STATS_VERBOSE = True
 
 # Optional: Stop the spider after 500 pages, just for safety
 # CLOSESPIDER_PAGECOUNT = 500
 
-LOG_LEVEL = 'INFO'
+LOG_LEVEL = "INFO"
 
 RESULTS_DIR = Path("data")
