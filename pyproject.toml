@@ -24,6 +24,9 @@ pyvis = "^0.3.2"
 holoviews = "^1.20.2"
 datashader = "^0.18.0"
 jupyter-bokeh = "^4.0.5"
+nbconvert = "^7.16.6"
+ndlib = "^5.1.1"
+scalene = "^1.5.51"
 
 
 [tool.poetry.group.dev.dependencies]

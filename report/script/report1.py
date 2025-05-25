@@ -252,10 +252,9 @@ get_stats(g)
 # ## Barabasi-Albert
 
 # %%
-n0 = 1980
 n = 2000
 m = 3
-g = BarabasiAlbertGraph(n0, n, m)
+g = BarabasiAlbertGraph(n, m)
 
 # %% [markdown]
 #

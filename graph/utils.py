@@ -1,4 +1,5 @@
 import numpy as np
+import random
 
 
 def get_combinations(xs: np.ndarray, ys: np.ndarray) -> np.ndarray:
@@ -21,3 +22,8 @@ def is_link_in_ring_lattice(i: np.ndarray, j: np.ndarray, k: int, n: int) -> np.
 def is_rightmost_neighbor(i: np.ndarray, j: np.ndarray, k: int, n: int) -> np.ndarray:
     diff = np.mod(i - j, n - 1 - k / 2)
     return (0 < diff) & (diff <= k / 2)
+
+
+def get_weighted_random_neighbors(weights, subset_size):
+    mapped_weights = [(random.expovariate(w), i) for i, w in enumerate(weights)]
+    return {i for _, i in sorted(mapped_weights)[:subset_size]}

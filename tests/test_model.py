@@ -180,60 +180,40 @@ def test_lattice_ring_graph():
     assert isinstance(g, model.LatticeRingGraph)
 
 
-@pytest.mark.parametrize(("n0", "n", "m"), [(3, 10, 2), (10, 15, 9), (9, 16, 8)])
-def test_barabasi_albert_graph(empty_graph, n0, n, m):
+@pytest.mark.parametrize(("n", "m"), [(10, 2), (15, 9), (16, 8)])
+def test_barabasi_albert_graph(empty_graph, n, m):
     # given
     mc_steps = 1000
     degrees: dict[int, list[int]] = defaultdict(list)
 
     # when / then
     for _ in range(mc_steps):
-        g = model._init_barabasi_albert_graph(model.Graph(), n0=n0, n=n, m=m)
+        g = model._init_barabasi_albert_graph(model.Graph(), n=n, m=m)
         assert len(g.vertices) == n
         for v in g.vertices:
             degrees[int(v.name)].append(g.get_degree(v))
 
 
 @pytest.mark.parametrize(
-    ("n0", "n", "m", "expected_error"),
+    ("n", "m", "expected_error"),
     [
         pytest.param(
             2,
-            10,
             2,
             r"Initial number of nodes \(2\) must be greater than sampling size \(2\)",
-        ),
-        pytest.param(
-            2,
-            10,
-            3,
-            r"Initial number of nodes \(2\) must be greater than sampling size \(3\)",
-        ),
-        pytest.param(
-            10,
-            10,
-            4,
-            r"Initial number of nodes \(10\) must be less than final number of nodes \(10\)",
-        ),
-        pytest.param(
-            11,
-            10,
-            1,
-            r"Initial number of nodes \(11\) must be less than final number of nodes \(10\)",
         ),
     ],
 )
 def test_barabasi_albert_graph__error(empty_graph, n0, n, m, expected_error):
     # when / then
     with pytest.raises(model.GraphError, match=expected_error):
-        model.BarabasiAlbertGraph(n0=n0, n=n, m=m)
+        model.BarabasiAlbertGraph(n=n, m=m)
 
 
 def test_barabasi_albert_graph_init(empty_graph, mocker: MockerFixture):
     # given
     n = 10
     m = 2
-    n0 = 2
     expected_graph = cast(model.BarabasiAlbertGraph, "dummy_graph")
     mocked_call_barabasi_albert_graph = mocker.patch.object(
         model,
@@ -242,9 +222,9 @@ def test_barabasi_albert_graph_init(empty_graph, mocker: MockerFixture):
     )
 
     # when
-    g = model.BarabasiAlbertGraph(n0=n0, n=n, m=m)
+    g = model.BarabasiAlbertGraph(n=n, m=m)
 
     # then
     assert isinstance(g, model.BarabasiAlbertGraph)
     assert mocked_call_barabasi_albert_graph.call_count == 1
-    assert mocked_call_barabasi_albert_graph.call_args == call(ANY, n0=n0, n=n, m=m)
+    assert mocked_call_barabasi_albert_graph.call_args == call(ANY, n=n, m=m)

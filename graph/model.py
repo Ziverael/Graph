@@ -7,7 +7,11 @@ from graph.base import (
     GraphError,
     FlexibleGraph,
 )
-from graph.utils import get_unique_combinations, is_link_in_ring_lattice
+from graph.utils import (
+    get_unique_combinations,
+    is_link_in_ring_lattice,
+    get_weighted_random_neighbors,
+)
 
 
 def _init_connected_graph(graph: Graph, n: int) -> Graph:
@@ -129,46 +133,41 @@ class WattStrogatzGraph(FlexibleGraph):
         _init_watts_strogatz_graph(self, n=n, k=k, beta=beta)
 
 
-def _init_barabasi_albert_graph(graph: Graph, n0: int, n: int, m: int) -> Graph:
+def _init_barabasi_albert_graph(graph: Graph, n: int, m: int) -> Graph:
     """Init Barabasi-Albert graph.
-    n0 - number of initial vertices
     n - number of vertices
     m - number of neighbors to connect to
     """
     if n <= m:
-        msg = f"Initial number of nodes ({n0}) must be greater than sampling size ({m})"
+        msg = f"Initial number of nodes ({n}) must be greater than sampling size ({m})"
         raise GraphError(msg)
-    elif n0 <= m:
-        msg = f"Initial number of nodes ({n0}) must be greater than sampling size ({m})"
-        raise GraphError(msg)
-    elif n <= n0:
-        msg = f"Initial number of nodes ({n0}) must be less than final number of nodes ({n})"
-        raise GraphError(msg)
-    graph = _init_connected_graph(graph, n0)
+    graph = _init_connected_graph(graph, m)
+    degrees = [graph.get_degree(v) for v in graph.vertices]
 
-    total_vertices = n0
+    for i in range(m, n):
+        n_neighbours = [
+            i + 1 for i in get_weighted_random_neighbors(degrees, subset_size=m)
+        ]
 
-    while total_vertices < n:
-        selected_vertices_idx = np.random.choice(
-            np.arange(len(graph.vertices)), size=m, replace=False
+        graph.add_edges_from_list(
+            [
+                (Vertex(name=VertexName(str(i))), Vertex(name=VertexName(str(j))))
+                for j in n_neighbours
+            ]
         )
-        degrees = np.array([graph.get_degree(v) for v in graph.vertices])
-        probs = degrees / np.sum(degrees)
-        edge_exists = np.random.random(size=m) < probs[selected_vertices_idx]
-
-        graph.add_vertex(
-            Vertex(name=VertexName(str(total_vertices := total_vertices + 1)))
-        )
-        for idx, flag in zip(selected_vertices_idx, edge_exists):
-            if flag:
-                graph.add_edge(
-                    vertex_from=graph.vertices[idx],
-                    vertex_to=graph.vertices[total_vertices - 1],
-                )
+        degrees.append(m)
+        for j in n_neighbours:
+            degrees[j] += 1
+            edge_params = (
+                Vertex(name=VertexName(str(i))),
+                Vertex(name=VertexName(str(j))),
+            )
+            if graph.get_edge(edge_params) is None:
+                graph.add_edge(*edge_params)
     return graph
 
 
 class BarabasiAlbertGraph(Graph):
-    def __init__(self, n0: int, n: int, m: int):
+    def __init__(self, n: int, m: int):
         super().__init__()
-        _init_barabasi_albert_graph(self, n0=n0, n=n, m=m)
+        _init_barabasi_albert_graph(self, n=n, m=m)

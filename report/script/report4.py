@@ -22,7 +22,14 @@ import matplotlib.animation as animation
 from IPython.display import HTML
 import networkx as nx
 from matplotlib.animation import FuncAnimation
-# %matplotlib notebook
+# %matplotlib inline
+
+# %%
+VIDEO_WRITER = animation.FFMpegWriter(fps=60) 
+
+# %%
+def save_animation(ani: FuncAnimation, filename: str):
+    ani.save(filename, writer=VIDEO_WRITER)
 
 # %% [markdown]
 # # Task 1
@@ -43,8 +50,7 @@ def update(frame):
 
 ani = animation.FuncAnimation(fig, update, frames=np.linspace(1, steps, num=5_000, dtype=int),
                               interval=30, blit=True)
-
-HTML(ani.to_jshtml())
+save_animation(ani, 'random_walk.mp4')
 
 # %% [markdown]
 # # Taks 2
@@ -71,7 +77,7 @@ def update(frame):
 ani = animation.FuncAnimation(fig, update, frames=np.linspace(1, steps, num=5_000, dtype=int),
                               interval=30, blit=True)
 
-HTML(ani.to_jshtml())
+save_animation(ani, 'random_pearson_walk.mp4')
 
 
 # %%
@@ -168,7 +174,82 @@ def show_random_walk_animation(g: nx.Graph, steps: int, seed: int = 1):
 
 
 # %%
-HTML(show_random_walk_animation(nx.erdos_renyi_graph(N_view, 0.3), steps_view).to_jshtml())
+save_animation(show_random_walk_animation(nx.erdos_renyi_graph(N_view, 0.3), steps_view), "graph_walk_erdos_p03.mp4")
+
+# %%
+save_animation(show_random_walk_animation(nx.erdos_renyi_graph(N_view, 0.7), steps_view), "graph_walk_erdos_p04.mp4")
+
+# %%
+save_animation(show_random_walk_animation(nx.watts_strogatz_graph(N_view, 4, 0.1), steps_view), "graph_walk_watts_4_01.mp4")
+
+# %%
+save_animation(show_random_walk_animation(nx.watts_strogatz_graph(N_view, 4, 0.0), steps_view), "graph_walk_watts_4_00.mp4")
+
+# %%
+save_animation(show_random_walk_animation(nx.watts_strogatz_graph(N_view, 10, 0.0), steps_view), "graph_walk_watts_10_00.mp4")
+
+# %%
+save_animation(show_random_walk_animation(nx.barabasi_albert_graph(N_view, 7), steps_view), "graph_walk_ba_7.mp4")
+
+# %%
+save_animation(show_random_walk_animation(nx.barabasi_albert_graph(N_view, 3), steps_view), "graph_walk_ba_3.mp4")
+
+# %%
+MAX_LIMIT = 10_000
+def get_all_nodes_visit_time(g: nx.Graph, max_limit: int = MAX_LIMIT) -> np.ndarray:
+    nodes = set(g.nodes())
+    visited_nodes: set[int] = set()
+    current_node = np.random.choice(list(nodes))
+    visited_nodes.add(current_node)
+
+    neighbor_cache = {}
+    step: int = 0
+    while visited_nodes != nodes and step < MAX_LIMIT:
+        if current_node not in neighbor_cache:
+            neighbor_cache[current_node] = list(g.neighbors(current_node))
+        neighbors = neighbor_cache[current_node]
+        current_node = neighbors[np.random.randint(len(neighbors))]
+        
+        visited_nodes.add(current_node)
+        step += 1
+    return step
+
+
+def get_all_nodes_visit_time_and_path(g: nx.Graph, max_limit: int = MAX_LIMIT) -> tuple[np.ndarray, np.ndarray]:
+    path = []
+    nodes = set(g.nodes())
+    visited_nodes: set[int] = set()
+    current_node = np.random.choice(list(nodes))
+    visited_nodes.add(current_node)
+    path.append(current_node)
+
+    neighbor_cache = {}
+    step: int = 0
+    while visited_nodes != nodes and step < MAX_LIMIT:
+        if current_node not in neighbor_cache:
+            neighbor_cache[current_node] = list(g.neighbors(current_node))
+        neighbors = neighbor_cache[current_node]
+        current_node = neighbors[np.random.randint(len(neighbors))]
+        
+        visited_nodes.add(current_node)
+        path.append(current_node)
+        step += 1
+    return step, np.array(path)
 
 
 # %%
+def show_random_walk_visiting_animation(g: nx.Graph, seed: int = 1):
+    steps, path = get_all_nodes_visit_time_and_path(g)
+    node_colors = np.full((N_view, steps + 1), 'lightblue', dtype='<U10')
+    for idx, node in enumerate(path):
+        node_colors[node, idx:] = 'darkred'
+        node_colors[node, idx] = 'red'
+    return get_random_walk_animation(g, node_colors, seed)
+
+
+# %%
+save_animation(show_random_walk_visiting_animation(nx.erdos_renyi_graph(N_view, 0.8)), "visits_erdos_p08.mp4")
+
+# %%
+get_all_nodes_visit_time(nx.erdos_renyi_graph(N_view, 0.8))
+
