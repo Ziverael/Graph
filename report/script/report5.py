@@ -7,7 +7,7 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.17.0
 #   kernelspec:
-#     display_name: graph-dXADCnCX-py3.12
+#     display_name: graph-RY0KbJSz-py3.12
 #     language: python
 #     name: python3
 # ---
@@ -26,13 +26,14 @@ from collections import namedtuple
 import networkx as nx
 from enum import Enum, auto
 from random import sample
+import random
 from matplotlib.animation import FuncAnimation
 import matplotlib.animation as animation
 import seaborn as sns
 
 
 # %% [markdown]
-# ## Task 1
+# # Task 1
 
 # %%
 SIRStep = namedtuple('SIRStep', ['S', 'I', 'R'])
@@ -264,16 +265,13 @@ print("R0=",model.R0_value)
 
 
 # %% [markdown]
-# ## Task 2
+# # Task 2
 
 # %%
 class State(Enum):
     suspectible = auto()
     infected = auto()
     removed = auto()
-
-def _change_state(unit: dict[str, State]) -> dict[str, State]:
-    pass
 
 
 # %%
@@ -296,11 +294,15 @@ class SIROnGraph():
     def __init__(
         self,
         model: str,
-        mc_steps: int,
         I0: int,
         p_infection: float,
+        seed: int | None = None,
+        mc_steps: int = 1_000,
         **kwargs,
     ) -> None:
+        if seed is not None:
+            np.random.seed(seed=seed)
+            random.seed(seed)
         self.graph = SIROnGraph.models[model](**kwargs)
         nx.set_node_attributes(self.graph, State.suspectible, "state")
         nx.set_node_attributes(
@@ -312,8 +314,10 @@ class SIROnGraph():
         )
 
         self.mc_steps = mc_steps
-        self.pos = nx.spring_layout(self.graph, seed=10)
+        self.seed = seed
+        self.pos = nx.spring_layout(self.graph, seed=3)
         self.p = p_infection
+        self.I0 = I0
 
         self.init_state = nx.get_node_attributes(self.graph, "state")
     
@@ -371,7 +375,7 @@ class SIROnGraph():
             alpha=0.8,
             ax=ax
         )
-        ax.set_title(f"Random Walk on graph")
+        ax.set_title(f"SIR model on the graph")
         ax.set_axis_off()
 
 
@@ -392,54 +396,144 @@ def save_animation(ani: FuncAnimation, filename: str, writer: animation.FFMpegWr
 
 
 
-# %%
-save_animation(plot_SIR_on_graph(SIROnGraph("2D lattice", m=10, n=10, I0=1, p_infection = 1.0, mc_steps=10), steps=20), "SIR_2d_p1.mp4")
-save_animation(plot_SIR_on_graph(SIROnGraph("2D lattice", m=10, n=10, I0=1, p_infection = .5, mc_steps=10), steps=20), "SIR_2d_p05.mp4")
-save_animation(plot_SIR_on_graph(SIROnGraph("2D lattice", m=10, n=10, I0=1, p_infection = .3, mc_steps=10), steps=20), "SIR_2d_p03.mp4")
+# %% [markdown]
+# ## SIR simulations
 
+# %% [markdown]
+# *CAUTION*: Commented to do not overwreite already generated simulations
+#
 
 # %%
-# save_animation(plot_SIR_on_graph(SIROnGraph("Erdos-Renyi", p = 0.07, n=100, I0=1, p_infection = 1.0, mc_steps=10), steps=20), "SIR_Erdos_renyi_p1.mp4")
-# save_animation(plot_SIR_on_graph(SIROnGraph("Erdos-Renyi", p = 0.07, n=100, I0=1, p_infection = 1.0, mc_steps=10), steps=20), "SIR_Erdos_renyi_p1.mp4")
-# save_animation(plot_SIR_on_graph(SIROnGraph("Erdos-Renyi", p = 0.07, n=100, I0=1, p_infection = 1.0, mc_steps=10), steps=20), "SIR_Erdos_renyi_p1.mp4")
+# For the case p=0.3 I've increased number of I0 to 3 because for many simulations for I0 the infection was exhausted after 1,2 or 3 setps.
+
+# save_animation(plot_SIR_on_graph(SIROnGraph("2D lattice", m=10, n=10, I0=1, p_infection = 1.0, seed=1), steps=20), "SIR_2d_p1.mp4")
+# save_animation(plot_SIR_on_graph(SIROnGraph("2D lattice", m=10, n=10, I0=1, p_infection = .5, seed=1), steps=20), "SIR_2d_p05.mp4")
+# save_animation(plot_SIR_on_graph(SIROnGraph("2D lattice", m=10, n=10, I0=3, p_infection = .3, seed=5), steps=20), "SIR_2d_p03.mp4")
+
+# %%
+# save_animation(plot_SIR_on_graph(SIROnGraph("Erdos-Renyi", p = 0.065, n=100, I0=1, p_infection = 1.0, seed=1), steps=20), "SIR_Erdos_renyi_p1.mp4")
+# save_animation(plot_SIR_on_graph(SIROnGraph("Erdos-Renyi", p = 0.07, n=100, I0=1, p_infection = .5, seed=1), steps=20), "SIR_Erdos_renyi_p05.mp4")
+# save_animation(plot_SIR_on_graph(SIROnGraph("Erdos-Renyi", p = 0.07, n=100, I0=1, p_infection = .3, seed=1), steps=20), "SIR_Erdos_renyi_p03.mp4")
+
+# %%
+
+# save_animation(plot_SIR_on_graph(SIROnGraph("Watts-Strogatz", k=4, p=0.07, n=100, I0=1, p_infection = 1.0, seed=1), steps=20), "SIR_Watts_Strogatz_p1.mp4")
+# save_animation(plot_SIR_on_graph(SIROnGraph("Watts-Strogatz", k=4, p=0.07, n=100, I0=1, p_infection = .5, seed=1), steps=20), "SIR_Watts_Strogatz_p05.mp4")
+# save_animation(plot_SIR_on_graph(SIROnGraph("Watts-Strogatz", k=4, p=0.07, n=100, I0=1, p_infection = .3, seed=1), steps=20), "SIR_Watts_Strogatz_p03.mp4")
+
+# %%
+# save_animation(plot_SIR_on_graph(SIROnGraph("Barabasi-Albert", m=70, n=100, I0=1, p_infection = 1.0, seed=1), steps=20), "SIR_Barabasi_Albert_p1.mp4")
+# save_animation(plot_SIR_on_graph(SIROnGraph("Barabasi-Albert", m=70, n=100, I0=1, p_infection = .5, seed=1), steps=20), "SIR_Barabasi_Albert_p05.mp4")
+# save_animation(plot_SIR_on_graph(SIROnGraph("Barabasi-Albert", m=70, n=100, I0=1, p_infection = .3, seed=1), steps=20), "SIR_Barabasi_Albert_p03.mp4")
 
 # %% [markdown]
 # ## Get simulation stats
 
 # %%
+MC_STEPS = 1_000
+
+
+# %%
 def simulate_and_plot_stats(model: SIROnGraph, title: str, ax: plt.Axes):
-    stats = model.run_simulation()
+    default_value_mapping = {
+            "infected_count": model.I0,
+            "suspectible_count": model.graph.number_of_nodes() - model.I0,
+            "removed_count": 0,
+    }
+    stats_total = []
+    average_stats = {
+            "new_infected_count": None,
+            "suspectible_count": None,
+            "removed_count": None,
+        }
+    for _ in range(model.mc_steps):
+        stats_total.append(model.run_simulation())
+        model.reset_state()
+    for key in default_value_mapping:
+        max_size = max([len(stats[key]) for stats in stats_total])
+        if key == "infected_count":
+            diffs = [np.diff(_align_array_to_size(stats[key], max_size, default_value_mapping[key])) for stats in stats_total]
+            for ar in diffs:
+                ar[ar < 0.0] = 0.0
+
+            average_stats["new_infected_count"] = np.mean(diffs, axis=0)
+        else:
+            average_stats[key] = np.mean([_align_array_to_size(stats[key], max_size, default_value_mapping[key]) for stats in stats_total], axis=0)
+
     sns.set_theme(style="darkgrid")
-    sns.lineplot(data=stats, ax=ax)
+    sns.lineplot(data=average_stats, ax=ax)
     ax.set_xlabel(r"$t$")
     ax.set_ylabel(r"$N(t)$")
     ax.set_title(title)
 
+def _align_array_to_size(array: np.ndarray, size: int, default_value: float) -> tuple[np.ndarray, np.ndarray]:
+    if size < len(array):
+        msg = "Size should be greater than alligning array"
+        raise ValueError(msg)
+    diff = size - len(array)
+    return (
+        np.append(array, [array[-1]] * diff, axis=0) if len(array) > 0
+        else 
+        np.append(array, [default_value] * diff, axis=0)
+    )
 
 
 # %%
 
 fig, ax = plt.subplots(4, 3, figsize=(20, 20), sharex=False, sharey=True)
 for idx, (model, title) in enumerate([
-    (SIROnGraph("2D lattice", m=20, n=20, I0=1, p_infection = 1.0, mc_steps=20), r"2D lattice ($p=1.0$)"),
-    (SIROnGraph("2D lattice", m=20, n=20, I0=1, p_infection = .5, mc_steps=20), r"2D lattice ($p=0.5$)"),
-    (SIROnGraph("2D lattice", m=20, n=20, I0=1, p_infection = .3, mc_steps=20), r"2D lattice ($p=0.3$)"),
+    (SIROnGraph("2D lattice", m=20, n=20, I0=1, p_infection = 1.0, mc_steps=MC_STEPS), r"2D lattice ($p=1.0$)"),
+    (SIROnGraph("2D lattice", m=20, n=20, I0=1, p_infection = .5, mc_steps=MC_STEPS), r"2D lattice ($p=0.5$)"),
+    (SIROnGraph("2D lattice", m=20, n=20, I0=1, p_infection = .3, mc_steps=MC_STEPS), r"2D lattice ($p=0.3$)"),
 
-    (SIROnGraph("Erdos-Renyi", p = 0.07, n=400, I0=1, p_infection = 1.0, mc_steps=20), r"Erdos-Renyi ($p=1.0$)"),
-    (SIROnGraph("Erdos-Renyi", p = 0.07, n=400, I0=1, p_infection = .5, mc_steps=20), r"Erdos-Renyi ($p=0.5$)"),
-    (SIROnGraph("Erdos-Renyi", p = 0.07, n=400, I0=1, p_infection = .3, mc_steps=20), r"Erdos-Renyi ($p=0.3$)"),
+    (SIROnGraph("Erdos-Renyi", p = 0.07, n=400, I0=1, p_infection = 1.0, mc_steps=MC_STEPS), r"Erdos-Renyi ($p=1.0$)"),
+    (SIROnGraph("Erdos-Renyi", p = 0.07, n=400, I0=1, p_infection = .5, mc_steps=MC_STEPS), r"Erdos-Renyi ($p=0.5$)"),
+    (SIROnGraph("Erdos-Renyi", p = 0.07, n=400, I0=1, p_infection = .3, mc_steps=MC_STEPS), r"Erdos-Renyi ($p=0.3$)"),
 
-    (SIROnGraph("Watts-Strogatz", k=4, p=0.07, n=400, I0=1, p_infection = 1.0, mc_steps=20), r"Watts-Strogatz ($p=1.0$)"),
-    (SIROnGraph("Watts-Strogatz", k=4, p=0.07, n=400, I0=1, p_infection = .5, mc_steps=20), r"Watts-Strogatz ($p=0.5$)"),
-    (SIROnGraph("Watts-Strogatz", k=4, p=0.07, n=400, I0=1, p_infection = .3, mc_steps=20), r"Watts-Strogatz ($p=0.3$)"),
+    (SIROnGraph("Watts-Strogatz", k=4, p=0.07, n=400, I0=1, p_infection = 1.0, mc_steps=MC_STEPS), r"Watts-Strogatz ($p=1.0$)"),
+    (SIROnGraph("Watts-Strogatz", k=4, p=0.07, n=400, I0=1, p_infection = .5, mc_steps=MC_STEPS), r"Watts-Strogatz ($p=0.5$)"),
+    (SIROnGraph("Watts-Strogatz", k=4, p=0.07, n=400, I0=1, p_infection = .3, mc_steps=MC_STEPS), r"Watts-Strogatz ($p=0.3$)"),
 
-    (SIROnGraph("Barabasi-Albert", m=300, n=400, I0=1, p_infection = 1.0, mc_steps=20), r"Barabasi-Albert ($p=1.0$)"),
-    (SIROnGraph("Barabasi-Albert", m=300, n=400, I0=1, p_infection = .5, mc_steps=20), r"Barabasi-Albert ($p=0.5$)"),
-    (SIROnGraph("Barabasi-Albert", m=300, n=400, I0=1, p_infection = .3, mc_steps=20), r"Barabasi-Albert ($p=0.3$)"),
+    (SIROnGraph("Barabasi-Albert", m=300, n=400, I0=1, p_infection = 1.0, mc_steps=MC_STEPS), r"Barabasi-Albert ($p=1.0$)"),
+    (SIROnGraph("Barabasi-Albert", m=300, n=400, I0=1, p_infection = .5, mc_steps=MC_STEPS), r"Barabasi-Albert ($p=0.5$)"),
+    (SIROnGraph("Barabasi-Albert", m=300, n=400, I0=1, p_infection = .3, mc_steps=MC_STEPS), r"Barabasi-Albert ($p=0.3$)"),
 ]):
     current_ax = ax.flat[idx]
     simulate_and_plot_stats(model, title, current_ax)
 fig.tight_layout()
 
 
+# %% [markdown]
+# We may observe that, for 2d lattice and Watt-Strogatz models with $p\le0.5$ the infectations abruplty stops for only one infected man at the beginning. For most of the cases we observe typical slope at the early stage of infection spreading and then a curve goes down. Only for Barabasi-Albert there is a rapid epidemy. It is worth to say, that in this case the epidemy spreading gets only two time steps.
+
+# %% [markdown]
+# ## $p$ influence on the infection
+
 # %%
+P_INCFECTION_LIST = np.linspace(0.1, 1.0, 40)
+
+
+# %%
+def simulate_and_plot_p_influence_stats(model: SIROnGraph):
+    default_value_mapping = {
+            "infected_count": model.I0,
+            "suspectible_count": model.graph.number_of_nodes() - model.I0,
+            "removed_count": 0,
+    }
+    stats_total = []
+    average_stats = {
+            "new_infected_count": None,
+            "suspectible_count": None,
+            "removed_count": None,
+        }
+    for _ in range(model.mc_steps):
+        stats_total.append(model.run_simulation())
+        model.reset_state()
+
+    infected_network_ratio = np.mean([model.graph.number_of_nodes() - stats["suspectible_count"][-1] for stats in stats_total]/ model.graph.numer_of_nodes())
+    return infected_network_ratio
+
+
+
+# %%
+def simulate_and_plot_p_influence_stats(model: SIROnGraph, title: str, ax: plt.Axes):
