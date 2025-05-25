@@ -35,7 +35,7 @@ sync-notebooks:
 
 sync-scripts:
     @echo "Syncing scripts with notebooks..."
-    poetry run jupytext --sync {{default_report_dir}}/notebook/*
+    poetry run jupytext --sync {{default_report_dir}}/notebook/*.ipynb
 
 all: check format test
 
