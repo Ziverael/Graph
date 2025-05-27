@@ -7,7 +7,7 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.17.0
 #   kernelspec:
-#     display_name: graph-RY0KbJSz-py3.12
+#     display_name: graph-dXADCnCX-py3.12
 #     language: python
 #     name: python3
 # ---
@@ -30,6 +30,8 @@ import random
 from matplotlib.animation import FuncAnimation
 import matplotlib.animation as animation
 import seaborn as sns
+import pandas as pd
+from itertools import chain
 
 
 # %% [markdown]
@@ -530,10 +532,56 @@ def simulate_and_plot_p_influence_stats(model: SIROnGraph):
         stats_total.append(model.run_simulation())
         model.reset_state()
 
-    infected_network_ratio = np.mean([model.graph.number_of_nodes() - stats["suspectible_count"][-1] for stats in stats_total]/ model.graph.numer_of_nodes())
-    return infected_network_ratio
+    infected_network_ratio = np.mean(
+        [
+            (model.graph.number_of_nodes() - stats["suspectible_count"][-1])/ model.graph.number_of_nodes()
+            for stats in stats_total
+        ]
+    )
+
+    avg_max_infection_time = 0.0
+    avg_infestation_time = 0.0
+    for stats in stats_total:
+        new_infection_count = np.diff(stats["infected_count"])
+        if len(new_infection_count) > 0:
+            max_infections_time = np.where(new_infection_count == np.max(new_infection_count))
+            avg_max_infection_time += max_infections_time[0][0]
+        else:
+            avg_max_infection_time += 0.0
+
+        avg_infestation_time += len(stats["infected_count"])
+    avg_max_infection_time /= model.mc_steps
+    avg_infestation_time /= model.mc_steps
+
+    return infected_network_ratio, avg_max_infection_time, avg_infestation_time
 
 
 
 # %%
-def simulate_and_plot_p_influence_stats(model: SIROnGraph, title: str, ax: plt.Axes):
+MC_STEPS=4
+models = [
+    (
+        SIROnGraph("2D lattice", m=20, n=20, I0=1, p_infection = p, mc_steps=MC_STEPS),
+        SIROnGraph("Erdos-Renyi", p = 0.07, n=400, I0=1, p_infection = p, mc_steps=MC_STEPS),
+        SIROnGraph("Watts-Strogatz", k=4, p=0.07, n=400, I0=1, p_infection = p, mc_steps=MC_STEPS),
+        SIROnGraph("Barabasi-Albert", m=300, n=400, I0=1, p_infection = p, mc_steps=MC_STEPS),
+    )
+    for p in P_INCFECTION_LIST
+]
+models = list(chain.from_iterable(models))
+
+df = pd.DataFrame(columns=["p", "model", "infected_network_ratio", "avg_max_infection_time", "avg_infestation_time"])
+for model in models:
+    infected_network_ratio, avg_max_infection_time, avg_infestation_time = simulate_and_plot_p_influence_stats(model)
+    df = df.append({ #TODO: fix this, append is deprecated
+        "p": model.p,
+        "model": model.model,
+        "infected_network_ratio": infected_network_ratio,
+        "avg_max_infection_time": avg_max_infection_time,
+        "avg_infestation_time": avg_infestation_time
+    }, ignore_index=True)
+    
+
+
+# %%
+sns.load_dataset("glue").pivot(index="Model", columns="Task", values="Score")
