@@ -71,12 +71,12 @@ def update(frame):
     line.set_data(x[:frame], y[:frame])
     return line,
 
-generate_and_save_animation(
-    fig,
-    update,
-    np.arange(steps),
-    'random_walk.mp4',
-)
+# generate_and_save_animation(
+#     fig,
+#     update,
+#     np.arange(steps),
+#     'random_walk.mp4',
+# )
 
 
 # %% [markdown]
@@ -100,12 +100,12 @@ def update(frame):
     line.set_data(x[:frame], y[:frame])
     return line,
 
-generate_and_save_animation(
-    fig,
-    update,
-    np.arange(steps),
-    'random_pearson_walk.mp4',
-)
+# generate_and_save_animation(
+#     fig,
+#     update,
+#     np.arange(steps),
+#     'random_pearson_walk.mp4',
+# )
 
 
 # %%
@@ -200,25 +200,25 @@ def show_random_walk_animation(g: nx.Graph, steps: int, seed: int = 1):
 
 
 # %%
-save_animation(show_random_walk_animation(nx.erdos_renyi_graph(N_view, 0.3), steps_view), "graph_walk_erdos_p03.mp4", writer=VIDEO_WRITER_SLOW)
+# save_animation(show_random_walk_animation(nx.erdos_renyi_graph(N_view, 0.3), steps_view), "graph_walk_erdos_p03.mp4", writer=VIDEO_WRITER_SLOW)
 
 # %%
-save_animation(show_random_walk_animation(nx.erdos_renyi_graph(N_view, 0.7), steps_view), "graph_walk_erdos_p04.mp4", writer=VIDEO_WRITER_SLOW)
+# save_animation(show_random_walk_animation(nx.erdos_renyi_graph(N_view, 0.7), steps_view), "graph_walk_erdos_p04.mp4", writer=VIDEO_WRITER_SLOW)
 
 # %%
-save_animation(show_random_walk_animation(nx.watts_strogatz_graph(N_view, 4, 0.1), steps_view), "graph_walk_watts_4_01.mp4", writer=VIDEO_WRITER_SLOW)
+# save_animation(show_random_walk_animation(nx.watts_strogatz_graph(N_view, 4, 0.1), steps_view), "graph_walk_watts_4_01.mp4", writer=VIDEO_WRITER_SLOW)
 
 # %%
-save_animation(show_random_walk_animation(nx.watts_strogatz_graph(N_view, 4, 0.0), steps_view), "graph_walk_watts_4_00.mp4", writer=VIDEO_WRITER_SLOW)
+# save_animation(show_random_walk_animation(nx.watts_strogatz_graph(N_view, 4, 0.0), steps_view), "graph_walk_watts_4_00.mp4", writer=VIDEO_WRITER_SLOW)
 
 # %%
-save_animation(show_random_walk_animation(nx.watts_strogatz_graph(N_view, 10, 0.0), steps_view), "graph_walk_watts_10_00.mp4", writer=VIDEO_WRITER_SLOW)
+# save_animation(show_random_walk_animation(nx.watts_strogatz_graph(N_view, 10, 0.0), steps_view), "graph_walk_watts_10_00.mp4", writer=VIDEO_WRITER_SLOW)
 
 # %%
-save_animation(show_random_walk_animation(nx.barabasi_albert_graph(N_view, 7), steps_view), "graph_walk_ba_7.mp4", writer=VIDEO_WRITER_SLOW)
+# save_animation(show_random_walk_animation(nx.barabasi_albert_graph(N_view, 7), steps_view), "graph_walk_ba_7.mp4", writer=VIDEO_WRITER_SLOW)
 
 # %%
-save_animation(show_random_walk_animation(nx.barabasi_albert_graph(N_view, 3), steps_view), "graph_walk_ba_3.mp4", writer=VIDEO_WRITER_SLOW)
+# save_animation(show_random_walk_animation(nx.barabasi_albert_graph(N_view, 3), steps_view), "graph_walk_ba_3.mp4", writer=VIDEO_WRITER_SLOW)
 
 # %%
 MAX_LIMIT = 10_000
@@ -274,25 +274,24 @@ def show_random_walk_visiting_animation(g: nx.Graph, seed: int = 1):
 
 
 # %%
-save_animation(show_random_walk_visiting_animation(nx.erdos_renyi_graph(N_view, 0.8)), "visits_erdos_p08.mp4", writer=VIDEO_WRITER_SLOW)
+# save_animation(show_random_walk_visiting_animation(nx.erdos_renyi_graph(N_view, 0.8)), "visits_erdos_p08.mp4", writer=VIDEO_WRITER_SLOW)
 
 # %%
-save_animation(show_random_walk_visiting_animation(nx.erdos_renyi_graph(N_view, 0.3)), "visits_erdos_p03.mp4", writer=VIDEO_WRITER_SLOW)
+# save_animation(show_random_walk_visiting_animation(nx.erdos_renyi_graph(N_view, 0.3)), "visits_erdos_p03.mp4", writer=VIDEO_WRITER_SLOW)
 
 # %%
-save_animation(show_random_walk_visiting_animation(nx.erdos_renyi_graph(N_view, 0.1)), "visits_erdos_p01.mp4", writer=VIDEO_WRITER_SLOW)
+# save_animation(show_random_walk_visiting_animation(nx.erdos_renyi_graph(N_view, 0.1)), "visits_erdos_p01.mp4", writer=VIDEO_WRITER_SLOW)
 
 # %%
-save_animation(show_random_walk_visiting_animation(nx.watts_strogatz_graph(N_view, 4, 0.1)), "visits_watts_4_01.mp4", writer=VIDEO_WRITER_SLOW)
+# save_animation(show_random_walk_visiting_animation(nx.watts_strogatz_graph(N_view, 4, 0.1)), "visits_watts_4_01.mp4", writer=VIDEO_WRITER_SLOW)
 
 # %%
-save_animation(show_random_walk_visiting_animation(nx.watts_strogatz_graph(N_view, 10, 0.0)), "visits_watts_10_00.mp4", writer=VIDEO_WRITER_SLOW)
-save_animation(show_random_walk_visiting_animation(nx.barabasi_albert_graph(N_view, 7)), "visits_ba_7.mp4", writer=VIDEO_WRITER_SLOW)
-save_animation(show_random_walk_visiting_animation(nx.barabasi_albert_graph(N_view, 3)), "visits_ba_3.mp4", writer=VIDEO_WRITER_SLOW)
+# save_animation(show_random_walk_visiting_animation(nx.watts_strogatz_graph(N_view, 10, 0.0)), "visits_watts_10_00.mp4", writer=VIDEO_WRITER_SLOW)
+# save_animation(show_random_walk_visiting_animation(nx.barabasi_albert_graph(N_view, 7)), "visits_ba_7.mp4", writer=VIDEO_WRITER_SLOW)
+# save_animation(show_random_walk_visiting_animation(nx.barabasi_albert_graph(N_view, 3)), "visits_ba_3.mp4", writer=VIDEO_WRITER_SLOW)
 
 # %%
-save_animation(show_random_walk_visiting_animation(nx.watts_strogatz_graph(N_view, 2, 0.3)), "visits_watts_2_03.mp4", writer=VIDEO_WRITER_SLOW)
-
+# save_animation(show_random_walk_visiting_animation(nx.watts_strogatz_graph(N_view, 2, 0.3)), "visits_watts_2_03.mp4", writer=VIDEO_WRITER_SLOW)
 
 # %%
 def plot_all_nodes_visit_time_distribution(g: nx.Graph, ax: plt.Axes, mc_steps: int = 100_000):
